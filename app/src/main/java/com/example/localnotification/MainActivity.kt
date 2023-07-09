@@ -4,8 +4,12 @@ import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -15,7 +19,10 @@ import androidx.core.app.NotificationManagerCompat
 import com.example.localnotification.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
-    private val CHANNEL_ID ="1"
+    private val CHANNEL_ID = "my_channel"
+
+    // Create a constant for the notification ID
+    private val NOTIFICATION_ID = 1
     lateinit var mainBinding:ActivityMainBinding
     var counter=0
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -27,47 +34,56 @@ class MainActivity : AppCompatActivity() {
             counter++
             mainBinding.sendNotification.text=counter.toString()
             if (counter%5==0){
-                startNotification()
+                // Create the notification channel
+                createNotificationChannel()
+
+
             }
+            // Show the heads-up notification
+            showHeadsUpNotification("Tushar")
         }
     }
 
-    private fun startNotification() {
-        val builder = NotificationCompat.Builder(this@MainActivity,CHANNEL_ID)
-        //// If android version greater than oreo....
-        if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.O)
-        {
-            val channel =NotificationChannel(CHANNEL_ID,"1",NotificationManager.IMPORTANCE_DEFAULT)
-            val manager:NotificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            manager.createNotificationChannel(channel)
-            builder.setSmallIcon(R.drawable.ic_launcher_foreground)
-                .setContentTitle("This title")
-                .setContentText("Your Message")
-        }
-        //If android version less than oreo....
-        else
-        {
-            builder.setSmallIcon(R.drawable.ic_launcher_foreground)
-                .setContentTitle("This title")
-                .setContentText("Your Message").priority = NotificationManager.IMPORTANCE_DEFAULT
-        }
-        val notificationManagerCompat = NotificationManagerCompat.from(this@MainActivity)
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return
-        }
-        notificationManagerCompat.notify(1,builder.build())
+    private fun createNotificationChannel() {
+        // Check if the device is running Android Oreo or higher
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channelName = "My Channel"
+            val channelDescription = "My Channel Description"
+            val importance = NotificationManager.IMPORTANCE_HIGH
 
+            // Create the notification channel
+            val channel = NotificationChannel(CHANNEL_ID, channelName, importance).apply {
+                description = channelDescription
+            }
+
+            // Register the notification channel with the system
+            val notificationManager: NotificationManager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
         }
+    }
+
+    private fun showHeadsUpNotification(nameDriver: String) {
+        // Create an intent to launch when the user taps the notification
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.example.com"))
+        val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+
+        // Build the notification
+        val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_background)
+            .setContentTitle("Super Travel ")
+            .setContentText("Your ride has been accepted by "+nameDriver!!)
+            .setLargeIcon(BitmapFactory.decodeResource(resources, R.drawable.ic_launcher_background))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_CALL)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .build()
+
+        // Show the notification
+        val notificationManager: NotificationManager =
+            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.notify(NOTIFICATION_ID, notification)
+    }
     }
 
